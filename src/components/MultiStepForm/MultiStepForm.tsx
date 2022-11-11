@@ -1,5 +1,20 @@
-import React, { useState, Children, ReactNode, ReactElement } from 'react'
-import { FormikConfig, FormikValues, Formik, Form, FormikHelpers } from 'formik'
+/* eslint-disable react-hooks/exhaustive-deps */
+import React, {
+  useState,
+  Children,
+  ReactNode,
+  ReactElement,
+  useMemo,
+  useEffect
+} from 'react'
+import {
+  FormikConfig,
+  FormikValues,
+  Formik,
+  Form,
+  FormikHelpers,
+  useFormikContext
+} from 'formik'
 import FormNavigation from '../FormNavigation/FormNavigation'
 import { Stepper, Step, StepLabel } from '@mui/material'
 
@@ -9,7 +24,18 @@ interface FormStepProps
   children: any
 }
 
-export const FormStep = ({ children }: FormStepProps) => children
+export const FormStep = ({ children }: FormStepProps) => {
+  const { setTouched } = useFormikContext()
+
+  useEffect(() => {
+    setTouched({})
+    return () => {
+      setTouched({})
+    }
+  }, [])
+
+  return children
+}
 
 interface MultiStepFormProps extends FormikConfig<FormikValues> {
   children: ReactNode
@@ -28,7 +54,10 @@ const MultiStepForm = ({
   const StepComponent = steps[stepNumber]
   const TOTAL_STEPS = steps.length
   const IS_LAST_STEP = stepNumber === TOTAL_STEPS - 1
-
+  const memoizedSchema = useMemo(
+    () => StepComponent.props.validationSchema,
+    [StepComponent.props.validationSchema]
+  )
   const nextStep = (values: FormikValues) => {
     setSnapshot(values)
     setStepNumber(stepNumber + 1)
@@ -61,28 +90,34 @@ const MultiStepForm = ({
       <Formik
         initialValues={snapshot}
         onSubmit={handleSubmit}
-        validationSchema={StepComponent.props.validationSchema}
+        validationSchema={memoizedSchema}
+        validateOnMount
       >
-        {({ values }) => (
-          <Form>
-            <Stepper activeStep={stepNumber} style={{ marginBottom: 30 }}>
-              {steps.map((step) => {
-                const label = step.props.stepName
-                return (
-                  <Step key={label}>
-                    <StepLabel>{label}</StepLabel>
-                  </Step>
-                )
-              })}
-            </Stepper>
-            {StepComponent}
-            <FormNavigation
-              isLastStep={IS_LAST_STEP}
-              onBackClick={() => previousStep(values)}
-              hasPrevious={stepNumber > 0}
-            />
-          </Form>
-        )}
+        {(formikProps) => {
+          console.log({ state: StepComponent.props.stepName, ...formikProps })
+
+          return (
+            <Form>
+              <Stepper activeStep={stepNumber} style={{ marginBottom: 30 }}>
+                {steps.map((step) => {
+                  const label = step.props.stepName
+                  return (
+                    <Step key={label}>
+                      <StepLabel>{label}</StepLabel>
+                    </Step>
+                  )
+                })}
+              </Stepper>
+              {StepComponent}
+              <FormNavigation
+                isLastStep={IS_LAST_STEP}
+                onBackClick={() => previousStep(formikProps.values)}
+                hasPrevious={stepNumber > 0}
+                {...formikProps}
+              />
+            </Form>
+          )
+        }}
       </Formik>
     </div>
   )

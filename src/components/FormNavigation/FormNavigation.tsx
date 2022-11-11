@@ -1,14 +1,21 @@
 import React from 'react'
 import { Button, Box } from '@mui/material'
-import { FormikValues } from 'formik'
+import { FormikValues, FormikProps } from 'formik'
 
-interface Props {
+interface Props extends FormikProps<FormikValues> {
   isLastStep: boolean
   onBackClick: (values: FormikValues) => void
   hasPrevious?: boolean
 }
 
-const FormNavigation = ({ isLastStep, hasPrevious, onBackClick }: Props) => {
+const FormNavigation = ({
+  isLastStep,
+  hasPrevious,
+  onBackClick,
+  isValid,
+  isSubmitting,
+  isValidating
+}: Props) => {
   return (
     <Box display='flex' justifyContent='space-between' pt={2}>
       {hasPrevious && (
@@ -17,7 +24,11 @@ const FormNavigation = ({ isLastStep, hasPrevious, onBackClick }: Props) => {
         </Button>
       )}
       {
-        <Button type='submit' variant='contained'>
+        <Button
+          type='submit'
+          variant='contained'
+          disabled={!isValid || isSubmitting || isValidating}
+        >
           {isLastStep ? 'Submit' : 'Continue'}
         </Button>
       }
